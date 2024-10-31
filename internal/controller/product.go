@@ -66,12 +66,6 @@ func (c *ProductController) getProductByID(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *ProductController) addProduct(w http.ResponseWriter, r *http.Request) {
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		http.Error(w, "Content type must be json", http.StatusForbidden)
-		return
-	}
-
 	product := r.Context().Value("product").(entity.Product)
 	productCreated, err := c.ProductService.InsertProduct(product)
 	if err != nil {
@@ -84,12 +78,6 @@ func (c *ProductController) addProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) updateProduct(w http.ResponseWriter, r *http.Request) {
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		http.Error(w, "Content type must be json", http.StatusForbidden)
-		return
-	}
-
 	pathID := r.PathValue("ID")
 	id, err := strconv.Atoi(pathID)
 	if err != nil {
