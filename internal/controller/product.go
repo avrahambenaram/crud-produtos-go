@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,6 +26,7 @@ func NewProductController(productService *service.ProductService) *ProductContro
 	mux.HandleFunc("GET /listall", productController.getAllProducts)
 	mux.HandleFunc("GET /{ID}", productController.getProductByID)
 	mux.HandleFunc("POST /add", productController.addProduct)
+	mux.HandleFunc("PUT /update/{ID}", productController.updateProduct)
 
 	return productController
 }
@@ -50,11 +50,9 @@ func (c *ProductController) getProductByID(w http.ResponseWriter, r *http.Reques
 		http.Error(w, errService.Error(), http.StatusNotFound)
 		return
 	}
-	fmt.Println("Got product", product.ID)
 
 	ctx := context.WithValue(r.Context(), "json", product)
 	*r = *r.WithContext(ctx)
-	fmt.Println("sent context")
 }
 
 func (c *ProductController) addProduct(w http.ResponseWriter, r *http.Request) {
@@ -78,12 +76,40 @@ func (c *ProductController) addProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productJson, errJson := json.Marshal(productCreated)
-	if errJson != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	ctx := context.WithValue(r.Context(), "json", productCreated)
+	*r = *r.WithContext(ctx)
+}
+
+func (c *ProductController) updateProduct(w http.ResponseWriter, r *http.Request) {
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		http.Error(w, "Content type must be json", http.StatusForbidden)
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(productJson)
+	pathID := r.PathValue("ID")
+	id, err := strconv.Atoi(pathID)
+	if err != nil {
+		http.Error(w, "Insert a valid ID (non negative integer)", http.StatusForbidden)
+		return
+	}
+
+	product := entity.Product{
+		ID: uint(id),
+	}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&product); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	productUpdated, errUpdated := c.ProductService.UpdateProduct(product)
+	if errUpdated != nil {
+		http.Error(w, errUpdated.Error(), http.StatusNotFound)
+		return
+	}
+
+	ctx := context.WithValue(r.Context(), "json", productUpdated)
+	*r = *r.WithContext(ctx)
 }

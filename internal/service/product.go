@@ -43,7 +43,7 @@ func (c ProductService) DeleteProduct(ID uint) error {
 func (c ProductService) UpdateProduct(product entity.Product) (entity.Product, error) {
 	_, err := c.GetProductById(product.ID)
 	if err != nil {
-		return entity.Product{}, nil
+		return entity.Product{}, err
 	}
 	entity.DB.Save(&product)
 	return product, nil
