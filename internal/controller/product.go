@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -25,8 +24,18 @@ func NewProductController(productService *service.ProductService) *ProductContro
 
 	mux.HandleFunc("GET /listall", productController.getAllProducts)
 	mux.HandleFunc("GET /{ID}", productController.getProductByID)
-	mux.HandleFunc("POST /add", productController.addProduct)
-	mux.HandleFunc("PUT /update/{ID}", productController.updateProduct)
+	mux.Handle(
+		"POST /add",
+		middleware.ParseBody(
+			http.HandlerFunc(productController.addProduct),
+		),
+	)
+	mux.Handle(
+		"PUT /update/{ID}",
+		middleware.ParseBody(
+			http.HandlerFunc(productController.updateProduct),
+		),
+	)
 	mux.HandleFunc("DELETE /delete/{ID}", productController.deleteProduct)
 
 	return productController
@@ -63,14 +72,7 @@ func (c *ProductController) addProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product := entity.Product{}
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&product); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
+	product := r.Context().Value("product").(entity.Product)
 	productCreated, err := c.ProductService.InsertProduct(product)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -95,16 +97,8 @@ func (c *ProductController) updateProduct(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	product := entity.Product{
-		ID: uint(id),
-	}
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&product); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
+	product := r.Context().Value("product").(entity.Product)
+	product.ID = uint(id)
 	productUpdated, errUpdated := c.ProductService.UpdateProduct(product)
 	if errUpdated != nil {
 		http.Error(w, errUpdated.Error(), http.StatusNotFound)
