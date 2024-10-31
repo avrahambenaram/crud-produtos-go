@@ -1,23 +1,26 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/avrahambenaram/crud-produtos-go/internal/entity"
+	"github.com/avrahambenaram/crud-produtos-go/internal/middleware"
 	"github.com/avrahambenaram/crud-produtos-go/internal/service"
 )
 
 type ProductController struct {
-	Mux *http.ServeMux
+	http.Handler
 	*service.ProductService
 }
 
 func NewProductController(productService *service.ProductService) *ProductController {
 	mux := http.NewServeMux()
 	productController := &ProductController{
-		mux,
+		middleware.SendJSON(mux),
 		productService,
 	}
 
@@ -28,16 +31,10 @@ func NewProductController(productService *service.ProductService) *ProductContro
 	return productController
 }
 
-func (c *ProductController) getAllProducts(w http.ResponseWriter, _ *http.Request) {
+func (c *ProductController) getAllProducts(w http.ResponseWriter, r *http.Request) {
 	products := c.ProductService.GetAllProducts()
-	resp, err := json.Marshal(products)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(resp)
+	ctx := context.WithValue(r.Context(), "json", products)
+	*r = *r.WithContext(ctx)
 }
 
 func (c *ProductController) getProductByID(w http.ResponseWriter, r *http.Request) {
@@ -53,15 +50,11 @@ func (c *ProductController) getProductByID(w http.ResponseWriter, r *http.Reques
 		http.Error(w, errService.Error(), http.StatusNotFound)
 		return
 	}
+	fmt.Println("Got product", product.ID)
 
-	productJson, errJson := json.Marshal(product)
-	if errJson != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(productJson)
+	ctx := context.WithValue(r.Context(), "json", product)
+	*r = *r.WithContext(ctx)
+	fmt.Println("sent context")
 }
 
 func (c *ProductController) addProduct(w http.ResponseWriter, r *http.Request) {

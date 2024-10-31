@@ -13,7 +13,7 @@ func main() {
 	productService := &service.ProductService{}
 	productController := controller.NewProductController(productService)
 
-	server.Handle("/product/", http.StripPrefix("/product", productController.Mux))
+	server.Handle("/product/", http.StripPrefix("/product", productController.Handler))
 
 	log.Println("Server running on port 8080")
 	http.ListenAndServe(":8080", server)
