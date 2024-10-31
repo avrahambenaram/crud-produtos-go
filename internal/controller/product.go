@@ -27,6 +27,7 @@ func NewProductController(productService *service.ProductService) *ProductContro
 	mux.HandleFunc("GET /{ID}", productController.getProductByID)
 	mux.HandleFunc("POST /add", productController.addProduct)
 	mux.HandleFunc("PUT /update/{ID}", productController.updateProduct)
+	mux.HandleFunc("DELETE /delete/{ID}", productController.deleteProduct)
 
 	return productController
 }
@@ -112,4 +113,21 @@ func (c *ProductController) updateProduct(w http.ResponseWriter, r *http.Request
 
 	ctx := context.WithValue(r.Context(), "json", productUpdated)
 	*r = *r.WithContext(ctx)
+}
+
+func (c *ProductController) deleteProduct(w http.ResponseWriter, r *http.Request) {
+	pathID := r.PathValue("ID")
+	id, err := strconv.Atoi(pathID)
+	if err != nil {
+		http.Error(w, "Insert a valid ID (non negative integer)", http.StatusForbidden)
+		return
+	}
+
+	errDel := c.ProductService.DeleteProduct(uint(id))
+	if errDel != nil {
+		http.Error(w, errDel.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(204)
 }
