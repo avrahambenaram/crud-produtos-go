@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/avrahambenaram/crud-produtos-go/internal/entity"
 	"github.com/avrahambenaram/crud-produtos-go/internal/service"
 )
 
@@ -22,6 +23,7 @@ func NewProductController(productService *service.ProductService) *ProductContro
 
 	mux.HandleFunc("GET /listall", productController.getAllProducts)
 	mux.HandleFunc("GET /{ID}", productController.getProductByID)
+	mux.HandleFunc("POST /add", productController.addProduct)
 
 	return productController
 }
@@ -53,6 +55,37 @@ func (c *ProductController) getProductByID(w http.ResponseWriter, r *http.Reques
 	}
 
 	productJson, errJson := json.Marshal(product)
+	if errJson != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(productJson)
+}
+
+func (c *ProductController) addProduct(w http.ResponseWriter, r *http.Request) {
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		http.Error(w, "Content type must be json", http.StatusForbidden)
+		return
+	}
+
+	product := entity.Product{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&product); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	productCreated, err := c.ProductService.InsertProduct(product)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	productJson, errJson := json.Marshal(productCreated)
 	if errJson != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
