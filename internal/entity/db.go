@@ -1,14 +1,15 @@
 package entity
 
 import (
-	"gorm.io/driver/sqlite"
+	"github.com/avrahambenaram/crud-produtos-go/internal/configuration"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
 func init() {
-	db, err := gorm.Open(sqlite.Open("devapp.db"), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(configuration.MysqlDSN), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

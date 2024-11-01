@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/avrahambenaram/crud-produtos-go/internal/configuration"
 	"github.com/avrahambenaram/crud-produtos-go/internal/controller"
 	"github.com/avrahambenaram/crud-produtos-go/internal/service"
 )
@@ -15,6 +17,6 @@ func main() {
 
 	server.Handle("/product/", http.StripPrefix("/product", productController.Handler))
 
-	log.Println("Server running on port 8080")
-	http.ListenAndServe(":8080", server)
+	log.Printf("Server running on port %d\n", configuration.Server.Port)
+	http.ListenAndServe(fmt.Sprintf(":%d", configuration.Server.Port), server)
 }
